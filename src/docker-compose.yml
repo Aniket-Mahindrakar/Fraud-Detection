@@ -79,15 +79,15 @@ services:
 
   airflow-apiserver:
     <<: *airflow-common
-    command: api-server
+    command: webserver
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/version"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 90s
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -256,6 +256,18 @@ services:
         echo "Files in shared volumes:"
         echo
         ls -la /opt/airflow/{logs,dags,plugins,config}
+        
+        echo "Running airflow db migrate"
+        /entrypoint airflow db migrate
+
+        echo "Creating admin user..."
+        /entrypoint airflow users create \
+          --username ${_AIRFLOW_WWW_USER_USERNAME:-airflow} \
+          --firstname ${_AIRFLOW_WWW_USER_FIRSTNAME:-Airflow} \
+          --lastname ${_AIRFLOW_WWW_USER_LASTNAME:-Admin} \
+          --role Admin \
+          --email ${_AIRFLOW_WWW_USER_EMAIL:-airflow@example.com} \
+          --password ${_AIRFLOW_WWW_USER_PASSWORD:-airflow} || true
 
     # yamllint enable rule:line-length
     environment:
@@ -264,6 +276,9 @@ services:
       _AIRFLOW_WWW_USER_CREATE: 'true'
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      _AIRFLOW_WWW_USER_FIRSTNAME: ${_AIRFLOW_WWW_USER_FIRSTNAME:-Airflow}
+      _AIRFLOW_WWW_USER_LASTNAME: ${_AIRFLOW_WWW_USER_LASTNAME:-Admin}
+      _AIRFLOW_WWW_USER_EMAIL: ${_AIRFLOW_WWW_USER_EMAIL:-airflow@example.com}
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
     networks:
