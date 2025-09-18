@@ -1,11 +1,13 @@
+import json
 import os
 import logging
 import random
 import signal
+import time
 import uuid
-from datetime import timedelta
+from datetime import timedelta, timezone, datetime
 from optparse import Option
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from faker import Faker
 from dotenv import load_dotenv
@@ -98,7 +100,7 @@ class TransactionProducer():
 
             if(self.producer):
                 self.producer.flush(timeout=30)
-                self.producer.close()
+                # self.producer.close()
 
             logger.info("Producer stopped")
 
@@ -115,8 +117,10 @@ class TransactionProducer():
                 schema = TRANSACTION_SCHEMA,
                 format_checker = FormatChecker(),
             )
+            return True
         except Exception as e:
-            logger.error(f"Invalid transaction: {e.message}")
+            logger.error(f"Invalid transaction: {str(e)}")
+            return False
 
     def generate_transaction(self) -> Optional[Dict[str, Any]]:
         transaction = {
@@ -146,7 +150,7 @@ class TransactionProducer():
         # Card Testing
         if(not is_fraud and amount < 2.0):
             # Simulate rapid small transactions
-            if((user_id % 1000 = 0) and (random.random() < 0.25)):
+            if((user_id % 1000 == 0) and (random.random() < 0.25)):
                 is_fraud = 1
                 transaction["amount"] = round(random.uniform(0.01, 2.0), 2)
                 transaction["location"] = "US"
@@ -175,7 +179,7 @@ class TransactionProducer():
         if(self.validate_transaction(transaction)):
             return transaction
 
-def send_transaction(self) -> bool:
+    def send_transaction(self) -> bool:
         try:
             transaction = self.generate_transaction()
             if not transaction:
