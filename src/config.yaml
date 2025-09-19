@@ -1,0 +1,27 @@
+mlflow:
+  experiment_name: "fraud_detection_v1"
+  registered_model_name: "fraud_detection_xgboost"
+  tracking_uri: "http://mlflow-server:5500"
+  artifact_location: "s3://mlflow/fraud_detection"
+  s3_endpoint_url: "http://minio:9000"
+  bucket: "mlflow"
+
+kafka:
+  bootstrap_servers: "pkc-gq2d51.ca-west-1.aws.confluent.cloud:9092"
+  username: "RBDRVHQTDALOJFU5"
+  password: "cfltoPPBHvK1hndPKjOdglVki+zd8EfB/+aHvV75IT8xdmkS/vCimHlRH3Fua0rQ"
+  topic: "transactions"
+  output_topic: "fraud_predictions"
+
+model:
+  test_size: 0.2
+  seed: 42
+  params:
+    n_estimators: 300
+    learning_rate: 0.05
+    max_depth: 5
+    subsample: 0.8
+    colsample_bytree: 0.8
+    scale_pos_weight: 1
+    tree_method: "hist"
+  path: "/app/models/fraud_detection_model.pkl"
