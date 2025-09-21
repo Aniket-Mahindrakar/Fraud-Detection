@@ -1,6 +1,8 @@
 import os
+import json
 import yaml
 import boto3
+import joblib
 import mlflow
 import logging
 import numpy as np
@@ -74,7 +76,7 @@ class FraudDetectionTraining:
                 aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
             )
 
-            buckets = s3.list_bucket()
+            buckets = s3.list_buckets()
             bucket_names = [b["Name"] for b in buckets.get("Buckets", [])]
             logger.info(f"Minio connection verified. Buckets: {bucket_names}")
 
@@ -96,7 +98,7 @@ class FraudDetectionTraining:
                 topic,
                 bootstrap_servers=self.config["kafka"]["bootstrap_servers"].split(","),
                 security_protocol="SASL_SSL",
-                sasl_mechanism="PLAINTEXT",
+                sasl_mechanism="PLAIN",
                 sasl_plain_username=self.config["kafka"]["username"],
                 sasl_plain_password=self.config["kafka"]["password"],
                 value_deserializer=lambda x: json.loads(x.decode("utf-8")),
@@ -111,7 +113,7 @@ class FraudDetectionTraining:
             if(df.empty):
                 raise ValueError("No messages received from Kafka")
 
-            df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+            df["timestamp"] = pd.to_datetime(df["timestamp"], format="ISO8601", utc=True)
 
             if("is_fraud" not in df.columns):
                 raise ValueError("Fraud label (is_fraud) is missing from Kafka data")
@@ -263,7 +265,7 @@ class FraudDetectionTraining:
                 logger.info("Best hyper-parameters: %s", best_params)
 
                 train_proba = best_model.predict_proba(X_train)[:, 1]
-                precision_arr, recall_arr, thresholds_arr = precision_recall_curve((y_train, train_proba))
+                precision_arr, recall_arr, thresholds_arr = precision_recall_curve(y_train, train_proba)
                 f1_scores = [2 * (p * r)/(p + r) if (p + r) > 0 else 0 for p, r in zip(precision_arr[:-1], recall_arr[:-1])]
                 best_threshold = thresholds_arr[np.argmax(f1_scores)]
                 logger.info("Optimal threshold determined as: %.4f", best_threshold)
@@ -321,6 +323,9 @@ class FraudDetectionTraining:
                     signature=signature,
                     registered_model_name="fraud_detection_model",
                 )
+
+                os.makedirs("/app/models", exist_ok=True)
+                joblib.dump(best_model, "/app/models/fraud_detection_model.pkl")
 
                 logger.info("Training successfully completed with metrics: %s", metrics)
 
