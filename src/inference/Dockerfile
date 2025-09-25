@@ -19,26 +19,24 @@ RUN wget -q --spider http://google.com || (echo "Network issue: Unable to reach 
 # Define spark version and URLs
 ENV SPARK_VERSION=3.5.4
 ENV HADOOP_VERSION=3
-ENV SPARK_FILENAME="spark-${SPARK_VERSION}--bin-hadoop${HADOOP_VERSION}.tgz"
-ENV SPARK_URL_PRIMARY="https://dlcdn.apache.org/spark/spark-${SPARK_VERSION}/${SPARK_FILENAME}"
-ENV SPARK_URL_BACKUP="https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/${SPARK_FILENAME}"
+ENV SPARK_FILENAME=spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz
+ENV SPARK_URL=https://dlcdn.apache.org/spark/spark-${SPARK_VERSION}/${SPARK_FILENAME}
 
-# Download and install Spark with retry logic
-RUN wget -q --retry-connrefused --waitretry=5 --tries=3 ${SPARK_URL_PRIMARY} -0 ${SPARK_FILENAME} || \
-    wget -q --retry-connrefused --waitretry=5 --tries=3 ${SPARK_URL_BACKUP} -0 ${SPARK_FILENAME} || \
-    (echo "Failed to download Spark from all sources!" && exit 1) \
-
+# Download and install Spark
+RUN wget -O ${SPARK_FILENAME} ${SPARK_URL} || \
+    wget -O ${SPARK_FILENAME} https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/${SPARK_FILENAME} || \
+    (echo "Failed to download Spark from all sources!" && exit 1)
 RUN tar xzf ${SPARK_FILENAME} -C /tmp && rm ${SPARK_FILENAME}
 RUN mv /tmp/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} /spark
 
 # Add Kafka connector and client JARs
-RUN wget -0 /spark/jars/spark-sql-kafka-0-10_2.12-${SPARK_VERSION}.jar \
-    https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0-10_2.12/${SPARK_VERSION}/spark-sql-kafka-0-10_2.12-3.5.4.jar
+RUN wget -O /spark/jars/spark-sql-kafka-0-10_2.12-${SPARK_VERSION}.jar \
+    https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0-10_2.12/${SPARK_VERSION}/spark-sql-kafka-0-10_2.12-${SPARK_VERSION}.jar
 
-RUN wget -0 /spark/jars/kafka-clients-3.6.1.jar \
-    https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0-10_2.12/3.6.1/spark-sql-kafka-0-10_2.12-3.5.4.jar
+RUN wget -O /spark/jars/kafka-clients-3.6.1.jar \
+    https://repo1.maven.org/maven2/org/apache/kafka/kafka-clients/3.6.1/kafka-clients-3.6.1.jar
 
-RUN wget -0 /spark/jars/commons-pool2-2.12.0.jar \
+RUN wget -O /spark/jars/commons-pool2-2.12.0.jar \
     https://repo1.maven.org/maven2/org/apache/commons/commons-pool2/2.12.0/commons-pool2-2.12.0.jar
 
 # Create virtual environment and working directory \

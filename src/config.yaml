@@ -12,6 +12,7 @@ kafka:
   password: "cfltoPPBHvK1hndPKjOdglVki+zd8EfB/+aHvV75IT8xdmkS/vCimHlRH3Fua0rQ"
   topic: "transactions"
   output_topic: "fraud_predictions"
+  security_topic: "SASL_SSL"
 
 model:
   test_size: 0.2
@@ -25,3 +26,9 @@ model:
     scale_pos_weight: 1
     tree_method: "hist"
   path: "/app/models/fraud_detection_model.pkl"
+
+spark:
+  app_name: "FraudDetectionInference"
+  packages: "org.mlflow:mlflow-spark:2.6.0,com.google.guava:guava:30.1.1-jre,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.4,org.apache.hadoop:hadoop-aws:3.3.0,com.amazonaws:aws-java-sdk:1.11.469"
+  shuffle_partitions: 200
+  checkpoint_locations: "checkpoints"
