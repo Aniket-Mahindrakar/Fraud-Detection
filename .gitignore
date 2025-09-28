@@ -1,6 +1,7 @@
 src/.env
-.idea/*.xml
+.idea/*
 src/config/*
+.DS_Store
 src/dags/.DS_Store
 src/dags/__pycache__/*
 src/logs/*
